@@ -1,0 +1,5 @@
+#!/bin/sh
+# FreeBSD's mount_smbfs only speaks SMB1, but modern Samba defaults to SMB2+.
+# QEMU's built-in SMB starts smbd with its own generated config, so we inject
+# the protocol option here.
+exec /usr/sbin/smbd.real --option="server min protocol=NT1" "$@"

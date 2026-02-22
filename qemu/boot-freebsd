@@ -1,0 +1,56 @@
+#!/bin/sh
+set -e
+
+# Determine QEMU binary and machine-specific arguments
+case "${FREEBSD_ARCH}" in
+  x86_64)
+    QEMU_BIN=qemu-system-x86_64
+    QEMU_MACHINE_ARGS=""
+    ;;
+  i386)
+    QEMU_BIN=qemu-system-i386
+    QEMU_MACHINE_ARGS=""
+    ;;
+  aarch64)
+    QEMU_BIN=qemu-system-aarch64
+    EFI_BIOS=""
+    for f in /usr/share/AAVMF/AAVMF_CODE.fd /usr/share/qemu-efi-aarch64/QEMU_EFI.fd; do
+      if [ -f "$f" ]; then
+        EFI_BIOS="$f"
+        break
+      fi
+    done
+    if [ -z "$EFI_BIOS" ]; then
+      echo "Error: could not find UEFI firmware for aarch64" >&2
+      exit 1
+    fi
+    QEMU_MACHINE_ARGS="-M virt -cpu cortex-a57 -bios $EFI_BIOS"
+    ;;
+  riscv64)
+    QEMU_BIN=qemu-system-riscv64
+    QEMU_MACHINE_ARGS="-M virt"
+    ;;
+  *)
+    echo "FreeBSD does not provide VM images for architecture: ${FREEBSD_ARCH}" >&2
+    exit 1
+    ;;
+esac
+
+# Enable KVM acceleration if available
+KVM_ARGS=""
+if [ -e /dev/kvm ]; then
+  KVM_ARGS="-enable-kvm"
+fi
+
+# Use virtio-net-device (MMIO) for virt machines, virtio-net-pci for x86
+case "${FREEBSD_ARCH}" in
+  x86_64|i386) VIRTIO_NET="-device virtio-net-pci,netdev=net0" ;;
+  *)           VIRTIO_NET="-device virtio-net-device,netdev=net0" ;;
+esac
+
+export QEMU_CMD="$QEMU_BIN $QEMU_MACHINE_ARGS $KVM_ARGS -m 1G -nographic -drive file=/freebsd.qcow2,format=qcow2,if=virtio -netdev user,id=net0,smb=/workdir $VIRTIO_NET"
+
+# Pass the user's command (if any) to the expect script
+export GUEST_CMD="$*"
+
+exec boot-freebsd.expect
