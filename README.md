@@ -55,3 +55,9 @@ docker run --rm -it -v "$PWD":/workdir freebsd-qemu
 ```
 
 Inside the VM, `/workdir` is mounted read-write and mirrors the host volume.
+
+If you're on a Linux host, you can forward /dev/kvm to the container to get hardware-acceleration:
+
+```sh
+docker run --rm -it -v "$PWD":/workdir --privileged -v /dev/kvm:/dev/kvm freebsd-qemu
+```
