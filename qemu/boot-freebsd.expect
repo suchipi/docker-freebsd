@@ -1,31 +1,21 @@
 #!/usr/bin/expect -f
 
 set timeout 600
+set send_human {.1 .1 10 .05 2}
 
 eval spawn $env(QEMU_CMD)
 
-expect {
-    "Autoboot in" {
-        # Skip the bootloader autoboot delay if present
-        send "\r"; exp_continue
-    }
-    "login:" {}
-    timeout {
-        puts "\nTimeout waiting for FreeBSD to boot"
-        exit 1
-    }
-}
+expect "Autoboot in"
+# hit escape
+send "\033"
+expect "OK "
+send -h "set console=comconsole\rboot\r"
+
+expect "login:"
 
 # Login as root (VM images have no root password)
 send "root\r"
-
-expect {
-    "# " {}
-    timeout {
-        puts "\nTimeout waiting for shell prompt"
-        exit 1
-    }
-}
+expect "# "
 
 # Create /workdir mount point and mount the SMB share from QEMU host
 send "mkdir -p /workdir\r"
@@ -40,7 +30,7 @@ if {$guest_cmd eq ""} {
     # Interactive mode
     puts "\n\n=== FreeBSD VM is ready ==="
     puts "  /workdir is shared with the host via SMB"
-    puts ""
+    puts "  run 'poweroff' to exit the VM"
     interact
 } else {
     # Non-interactive: run the command in a subshell (so eg "exit 42" doesn't

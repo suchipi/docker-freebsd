@@ -39,7 +39,7 @@ esac
 # Enable KVM acceleration if available
 KVM_ARGS=""
 if [ -e /dev/kvm ]; then
-  KVM_ARGS="-enable-kvm"
+  KVM_ARGS="-enable-kvm -cpu host"
 fi
 
 # Use virtio-net-device (MMIO) for virt machines, virtio-net-pci for x86
