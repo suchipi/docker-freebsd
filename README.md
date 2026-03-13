@@ -1,4 +1,4 @@
-# docker-freebsd-cross
+# docker-freebsd
 
 Docker images for:
 
